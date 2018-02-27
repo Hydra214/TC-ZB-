@@ -2574,14 +2574,25 @@ SpellMissInfo Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool scaleA
 
     if (m_caster != unit)
     {
-        // Recheck  UNIT_FLAG_NON_ATTACKABLE for delayed spells
-        if (m_spellInfo->Speed > 0.0f && unit->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE) && unit->GetCharmerOrOwnerGUID() != m_caster->GetGUID())
-            return SPELL_MISS_EVADE;
+		// Recheck  UNIT_FLAG_NON_ATTACKABLE for delayed spells
+		if (m_spellInfo->Speed > 0.0f && unit->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE) && unit->GetCharmerOrOwnerGUID() != m_caster->GetGUID())
+			return SPELL_MISS_EVADE;
 
-        if (m_caster->_IsValidAttackTarget(unit, m_spellInfo))
-            unit->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_HITBYSPELL);
-        else if (m_caster->IsFriendlyTo(unit))
-        {
+		if (m_caster->_IsValidAttackTarget(unit, m_spellInfo))
+		{
+			unit->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_HITBYSPELL);
+
+			if (unit->IsTotem() && unit->IsMagnet()) //Totem Polymorph fix
+			{
+				if (m_spellInfo->HasAttribute(SPELL_ATTR1_UNK18) && m_damage <= 0)
+				{
+					unit->KillSelf();
+					return SPELL_MISS_IMMUNE;
+				}
+			}
+		}
+		else if (m_caster->IsFriendlyTo(unit))
+		{
             // for delayed spells ignore negative spells (after duel end) for friendly targets
             /// @todo this cause soul transfer bugged
             // 63881 - Malady of the Mind jump spell (Yogg-Saron)
